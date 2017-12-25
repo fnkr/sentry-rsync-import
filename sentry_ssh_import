@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e -u -o pipefail
+shopt -s nullglob
+
+source -- "$(dirname -- "${BASH_SOURCE[0]}")/sentry_ssh_import.config"
+
+for report_location in "${report_locations[@]}"; do
+    rsync \
+        --compress \
+        --recursive --exclude='*/' --include='*.sentry_report' \
+        --remove-source-files "${report_location}/" "$cache_dir"
+done
+
+for report in "$cache_dir"/*.sentry_report; do
+    curl \
+        --header "X-Sentry-Auth: Sentry sentry_version=6, sentry_key=${sentry_key}, sentry_secret=${sentry_secret}" \
+        --data "@${report}" \
+        "${sentry_host}/api/${sentry_project_id}/store/"
+    rm -- "$report"
+done
