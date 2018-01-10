@@ -2,7 +2,30 @@
 set -e -u -o pipefail
 shopt -s nullglob
 
-source -- "$(dirname -- "${BASH_SOURCE[0]}")/sentry_ssh_import.config"
+script_name="$(basename -- "$0")"
+
+config="$(dirname -- "${BASH_SOURCE[0]}")/sentry_ssh_import.config"
+
+print_help() {
+    echo "usage: $script_name [-c=CONFIG | --config=CONFIG]"
+    echo "       $script_name [-h] [--help]"
+}
+
+for arg in "$@"; do
+    if [[ "$arg" == "--config="* ]]; then
+	config="${arg##--config=}"
+    elif [[ "$arg" == "-c="* ]]; then
+	config="${arg##-c=}"
+    elif [ "$arg" = "--help" ] || [ "$arg" = "-h" ]; then
+        print_help
+        exit 0
+    else
+        print_help 1>&2
+        exit 1
+    fi
+done
+
+source -- "$config"
 
 for report_location in "${report_locations[@]}"; do
     rsync \
@@ -16,5 +39,6 @@ for report in "$cache_dir"/*.sentry_report; do
         --header "X-Sentry-Auth: Sentry sentry_version=6, sentry_key=${sentry_key}, sentry_secret=${sentry_secret}" \
         --data "@${report}" \
         "${sentry_host}/api/${sentry_project_id}/store/"
+    printf -- '\n'
     rm -- "$report"
 done
