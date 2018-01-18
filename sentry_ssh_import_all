@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+trap exit SIGINT
+while true; do
+    for file in *.config; do
+        [ "$file" = "sentry_ssh_import.config" ] && continue
+        ./sentry_ssh_import -c="$file"
+    done
+done
