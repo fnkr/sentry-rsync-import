@@ -46,5 +46,7 @@ find "$cache_dir" -type f -name "*.sentry_report" -print0 | shuf --zero-terminat
     then
         printf -- '\n'
         rm -- "$report"
+    else
+        printf -- "$script_name: error: failed to submit report: $report\n"
     fi
 done
