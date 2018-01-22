@@ -37,7 +37,8 @@ for report_location in "${report_locations[@]}"; do
         --remove-source-files "${report_location}/" "$cache_dir"
 done
 
-for report in "$cache_dir"/*.sentry_report; do
+find "$cache_dir" -type f -name "*.sentry_report" -print0 | shuf --zero-terminated | while IFS= read -r -d $'\0' report; do
+    [ ! -f "$report" ] && continue
     if curl --fail \
         --header "X-Sentry-Auth: Sentry sentry_version=6, sentry_key=${sentry_key}, sentry_secret=${sentry_secret}" \
         --data "@${report}" \
