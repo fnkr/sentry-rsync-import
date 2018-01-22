@@ -27,6 +27,9 @@ done
 
 source -- "$config"
 
+cache_dir="$cache_dir/$(basename -- "$config" .config)"
+[ ! -d "$cache_dir" ] && mkdir -- "$cache_dir"
+
 for report_location in "${report_locations[@]}"; do
     rsync \
         --compress \
