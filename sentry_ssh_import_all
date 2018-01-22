@@ -1,8 +1,35 @@
 #!/usr/bin/env bash
 trap exit SIGINT
+
+script_name="$(basename -- "$0")"
+
+print_help() {
+    echo "usage: $script_name [--verbose] [--sleep=seconds]"
+    echo "       $script_name [-h] [--help]"
+}
+
+verbose=
+sleep=0
+
+for arg in "$@"; do
+    if [ "$arg" = "--verbose" ]; then
+        verbose=1
+    elif [[ "$arg" == "--sleep="* ]]; then
+        sleep="${arg##--sleep=}"
+    elif [ "$arg" = "--help" ] || [ "$arg" = "-h" ]; then
+        print_help
+        exit 1
+    else
+        print_help
+        exit 1
+    fi
+done
+
 while true; do
     for file in *.config; do
         [ "$file" = "sentry_ssh_import.config" ] && continue
+        [ ! -z "$verbose" ] && echo "==> $(basename -- "$file" .config)"
         ./sentry_ssh_import -c="$file"
     done
+    sleep -- "$sleep"
 done
