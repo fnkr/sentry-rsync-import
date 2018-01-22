@@ -28,8 +28,13 @@ done
 while true; do
     for file in *.config; do
         [ "$file" = "sentry_ssh_import.config" ] && continue
-        [ ! -z "$verbose" ] && echo "==> $(basename -- "$file" .config)"
-        ./sentry_ssh_import -c="$file"
+        [ ! -z "$verbose" ] && \
+            printf -- "$script_name: info: importing $(basename -- "$file" .config)\n"
+        ./sentry_ssh_import --config="$file"
     done
-    sleep -- "$sleep"
+    if [ ! -z "$sleep" ] && [ "$sleep" -gt 0 ]; then
+        [ ! -z "$verbose" ] && \
+            printf -- "$script_name: info: sleeping $sleep seconds\n"
+        sleep -- "$sleep"
+    fi
 done
