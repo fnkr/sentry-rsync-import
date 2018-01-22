@@ -35,10 +35,12 @@ for report_location in "${report_locations[@]}"; do
 done
 
 for report in "$cache_dir"/*.sentry_report; do
-    curl \
+    if curl \
         --header "X-Sentry-Auth: Sentry sentry_version=6, sentry_key=${sentry_key}, sentry_secret=${sentry_secret}" \
         --data "@${report}" \
         "${sentry_host}/api/${sentry_project_id}/store/"
-    printf -- '\n'
-    rm -- "$report"
+    then
+        printf -- '\n'
+        rm -- "$report"
+    fi
 done
