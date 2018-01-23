@@ -11,9 +11,7 @@ It's also not that complicated, basically it's just rsync and curl.
 
 ```php
 $sentryClient = new \Raven_Client($dsn);
-$sentryClient->setTransport(
-    'transport' => function($client, $data) {
-        file_put_contents('/var/log/sentry/' . uniqid() . '.sentry_report', json_encode($data));
-    }
-);
+$sentryClient->setTransport(function ($client, $data) {
+    file_put_contents('/var/log/sentry/' . uniqid() . '.sentry_report', json_encode($data));
+});
 ```
