@@ -49,4 +49,5 @@ find "$cache_dir" -type f -name "*.sentry_report" -print0 | shuf --zero-terminat
     else
         printf -- "$script_name: error: failed to submit report: ${config%%.config}: $(basename -- $report): $curl_result\n"
     fi)&
+    sleep 0.02
 done
