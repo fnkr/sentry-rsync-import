@@ -255,7 +255,7 @@ func main() {
 	log.Printf("info: received %v, stopping import queue", <-signals)
 	go func() {
 		time.Sleep(maxTimeToWaitUntilExit)
-		log.Fatal("error: stopping queues took to long, exiting now")
+		log.Fatal("error: stopping queues took too long, exiting now")
 	}()
 	importQueueStopSignal = true
 	importQueueWaitGroup.Wait()
