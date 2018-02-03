@@ -56,15 +56,6 @@ const (
 	maxTimeToWaitUntilExit    = sentryHTTPTimeout + (time.Second * 4)
 )
 
-var (
-	eventQueue            chan Event
-	eventQueueStopSignal  = false
-	eventQueueWaitGroup   sync.WaitGroup
-	importQueue           chan Import
-	importQueueStopSignal = false
-	importQueueWaitGroup  sync.WaitGroup
-)
-
 func (imprt *Import) Cache() string {
 	if _, err := os.Stat(imprt.cache); err != nil {
 		if err := os.Mkdir(imprt.cache, os.ModePerm); err != nil {
@@ -126,7 +117,7 @@ func submitEvent(event Event) {
 	syscall.Unlink(event.File)
 }
 
-func submitEvents(imprt Import) {
+func submitEvents(imprt Import, queue chan Event) {
 	imprt.SourceLock.Lock()
 	defer imprt.SourceLock.Unlock()
 	log.Printf("submitEvents: info: rsync: imprt.Name=\"%s\"", imprt.Name)
@@ -142,41 +133,42 @@ func submitEvents(imprt Import) {
 	}
 	for _, file := range events {
 		//log.Printf("submitEvents: info: add file to event queue: imprt.Source=\"%s\"", imprt.Source)
-		eventQueue <- Event{File: file, Target: imprt.Target, ImportName: imprt.Name}
+		queue <- Event{File: file, Target: imprt.Target, ImportName: imprt.Name}
 	}
 }
 
-func spawnEventQueueWorkers(queue chan Event, num uint) {
+func spawnEventQueueWorkers(queue chan Event, num uint, waitGroup *sync.WaitGroup, stopSignal *bool) {
 	for i := uint(0); i < num; i++ {
-		eventQueueWaitGroup.Add(1)
+		waitGroup.Add(1)
 		go func() {
-			defer eventQueueWaitGroup.Done()
+			defer waitGroup.Done()
+		loop:
 			for {
-				if eventQueueStopSignal {
-					break
-				}
 				select {
 				case event := <-queue:
 					submitEvent(event)
 				case <-time.After(time.Millisecond * 100):
+					if *stopSignal {
+						break loop
+					}
 				}
 			}
 		}()
 	}
 }
 
-func spawnImportQueueWorkers(queue chan Import, num uint) {
+func spawnImportQueueWorkers(importQueue chan Import, eventQueue chan Event, num uint, waitGroup *sync.WaitGroup, stopSignal *bool) {
 	for i := uint(0); i < num; i++ {
-		importQueueWaitGroup.Add(1)
+		waitGroup.Add(1)
 		go func() {
-			defer importQueueWaitGroup.Done()
+			defer waitGroup.Done()
 			for {
-				if importQueueStopSignal {
+				if *stopSignal {
 					break
 				}
 				select {
-				case imprt := <-queue:
-					submitEvents(imprt)
+				case imprt := <-importQueue:
+					submitEvents(imprt, eventQueue)
 				case <-time.After(time.Millisecond * 100):
 				}
 			}
@@ -245,13 +237,17 @@ func main() {
 	}
 
 	// Create event queue and spawn event queue workers
-	eventQueue = make(chan Event)
-	spawnEventQueueWorkers(eventQueue, config.NumSubmitWorkers)
+	eventQueue := make(chan Event)
+	eventQueueWaitGroup := sync.WaitGroup{}
+	eventQueueStopSignal := false
+	spawnEventQueueWorkers(eventQueue, config.NumSubmitWorkers, &eventQueueWaitGroup, &eventQueueStopSignal)
 
 	// Create import queue and spawn import queue workers
-	importQueue = make(chan Import)
+	importQueue := make(chan Import)
+	importQueueWaitGroup := sync.WaitGroup{}
+	importQueueStopSignal := false
 	startImportQueueScheduler(importQueue, config.Imports, config.MinTimeBetweenImports)
-	spawnImportQueueWorkers(importQueue, config.NumImportWorkers)
+	spawnImportQueueWorkers(importQueue, eventQueue, config.NumImportWorkers, &importQueueWaitGroup, &importQueueStopSignal)
 
 	// Exit if we get the signal to do so
 	signals := make(chan os.Signal, 2)
