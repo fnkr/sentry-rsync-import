@@ -1,0 +1,13 @@
+{
+    "imports": [
+        {
+            "name": "<Name to use in logs>",
+            "source": "<user>@<hostname>:</path/to/sentry/reports>",
+            "target": "<Sentry DSN>"
+        }
+    ],
+    "cache": "./cache",
+    "minTimeBetweenImports": 1,
+    "numImportWorkers": 2,
+    "numSubmitWorkers": 10
+}

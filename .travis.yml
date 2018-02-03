@@ -1,0 +1,20 @@
+language: go
+
+go:
+  - 1.x.x
+
+script:
+  - go test
+  - GOOS=linux   GOARCH=amd64 go build -o builds/sentry-rsync-import_linux-amd64
+  - GOOS=darwin  GOARCH=amd64 go build -o builds/sentry-rsync-import_darwin-amd64
+  - GOOS=windows GOARCH=amd64 go build -o builds/sentry-rsync-import_windows-amd64.exe
+  - GOOS=freebsd GOARCH=amd64 go build -o builds/sentry-rsync-import_freebsd-amd64
+
+deploy:
+  provider: releases
+  api_key: "$GITHUB_TOKEN"
+  file_glob: true
+  file: builds/sentry-rsync-import_*
+  skip_cleanup: true
+  on:
+    tags: true
