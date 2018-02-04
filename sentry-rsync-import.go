@@ -73,6 +73,25 @@ func (config *Config) LoadJSON(bytes []byte) error {
 	return json.Unmarshal(bytes, config)
 }
 
+func (config *Config) init() error {
+	// Check if cache dir is valid
+	if cache, err := os.Stat(config.Cache); err != nil {
+		return err
+	} else if !cache.IsDir() {
+		return errors.New("cache must be a directory")
+	}
+
+	for idx, val := range config.Imports {
+		config.Imports[idx].SetCache(config.Cache) // Create cache directories for imports
+		config.Imports[idx].SourceLock = &sync.Mutex{}
+		if val.Source[len(val.Source)-1:] != "/" { // Ensure trailing slash
+			config.Imports[idx].Source = val.Source + "/"
+		}
+	}
+
+	return nil
+}
+
 func submitEvent(event Event) {
 	// Read
 	reader, err := os.Open(event.File)
@@ -190,7 +209,7 @@ func startImportQueueScheduler(queue chan Import, imports []Import, minTimeBetwe
 	}()
 }
 
-func parseConfig() (Config, error) {
+func parseFlags() (Config, error) {
 	// Parse flags
 	file := flag.String("config", "./sentry-rsync-import.json", "Path to config file")
 	flag.Parse()
@@ -207,21 +226,6 @@ func parseConfig() (Config, error) {
 		return Config{}, err
 	}
 
-	// Check if cache dir is valid
-	if cache, err := os.Stat(config.Cache); err != nil {
-		return Config{}, err
-	} else if !cache.IsDir() {
-		return Config{}, errors.New("cache must be a directory")
-	}
-
-	for idx, val := range config.Imports {
-		config.Imports[idx].SetCache(config.Cache) // Create cache directories for imports
-		config.Imports[idx].SourceLock = &sync.Mutex{}
-		if val.Source[len(val.Source)-1:] != "/" { // Ensure trailing slash
-			config.Imports[idx].Source = val.Source + "/"
-		}
-	}
-
 	// Return config
 	return config, nil
 }
@@ -231,9 +235,17 @@ func main() {
 	var config Config
 	{
 		var err error
-		if config, err = parseConfig(); err != nil {
+		if config, err = parseFlags(); err != nil {
 			log.Fatal(err)
 		}
+	}
+
+	RunForever(config)
+}
+
+func RunForever(config Config) {
+	if err := config.init(); err != nil {
+		log.Fatal(err)
 	}
 
 	// Create event queue and spawn event queue workers
