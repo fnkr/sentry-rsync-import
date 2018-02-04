@@ -26,11 +26,11 @@ type Event struct {
 }
 
 type Import struct {
-	Name       string `json:"name"`   // Name used in logs
-	Source     string `json:"source"` // rsync-compatible path (user@host:/path)
-	SourceLock *sync.Mutex            // Lock target directory for reads/writes
-	Target     DSN    `json:"target"` // Sentry DSN
-	cache      string                 // Path to cache directory
+	Name       string      `json:"name"`   // Name used in logs
+	Source     string      `json:"source"` // rsync-compatible path (user@host:/path)
+	SourceLock *sync.Mutex `json:"-"`      // Lock target directory for reads/writes
+	Target     DSN         `json:"target"` // Sentry DSN
+	cache      string                      // Path to cache directory
 }
 
 type Config struct {
