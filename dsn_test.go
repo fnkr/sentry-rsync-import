@@ -7,7 +7,7 @@ import (
 
 const (
 	TestValidPublicKey = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-	TestValidSecretKey = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+	TestValidSecretKey = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
 	TestValidScheme    = "https"
 	TestValidHostname  = "hostname"
 	TestValidPort      = "1234"
@@ -46,7 +46,7 @@ func TestDSN(t *testing.T) {
 	if dsn.DSN != dsnstr {
 		t.Error("DSN does not match")
 	}
-	if dsn.AuthHeader != fmt.Sprintf("Sentry sentry_version=6, sentry_key=%s, sentry_secret=%s", TestValidSecretKey, TestValidPublicKey) {
+	if dsn.AuthHeader != fmt.Sprintf("Sentry sentry_version=6, sentry_key=%s, sentry_secret=%s", TestValidPublicKey, TestValidSecretKey) {
 		t.Error("AuthHeader does not match")
 	}
 	if dsn.StoreAPI != (dsn.Scheme + "://" + dsn.PublicKey + ":" + dsn.SecretKey + "@" + dsn.Hostname + ":" + dsn.Port + "/api/" + dsn.ProjectID + "/store/") {
