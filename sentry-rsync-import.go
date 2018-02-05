@@ -112,27 +112,29 @@ func submitEvent(event Event) {
 	}
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("X-Sentry-Auth", event.Target.AuthHeader)
+	startTime := time.Now()
 	response, err := client.Do(request)
+	requestTime := time.Since(startTime).Round(time.Millisecond)
 
 	// Evaluate response
 	if err != nil {
-		log.Printf("submitEvent: error: event.File=\"%s\" event.ImportName=\"%s\" error=\"%v\"", event.File, event.ImportName, err)
+		log.Printf("submitEvent: error: event.File=\"%s\" event.ImportName=\"%s\" error=\"%v\" requestTime=%s", event.File, event.ImportName, err, requestTime)
 		return
 	}
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Printf("submitEvent: error: event.File=\"%s\" event.ImportName=\"%s\" error=\"%v\"", event.File, event.ImportName, err)
+		log.Printf("submitEvent: error: event.File=\"%s\" event.ImportName=\"%s\" error=\"%v\" requestTime=%s", event.File, event.ImportName, err, requestTime)
 		return
 	}
 	if response.StatusCode != 200 {
-		log.Printf("submitEvent: error: event.File=\"%s\" event.ImportName=\"%s\" response.StatusCode=%d error=\"unexpected response.Status\"", event.File, event.ImportName, response.StatusCode)
+		log.Printf("submitEvent: error: event.File=\"%s\" event.ImportName=\"%s\" response.StatusCode=%d error=\"unexpected response.Status\" requestTime=%s", event.File, event.ImportName, response.StatusCode, requestTime)
 
 		// TODO: Parse JSON response
 		if response.StatusCode != 403 || !strings.HasPrefix(string(body), "{\"error\":\"An event with the same ID already exists") {
 			return
 		}
 	}
-	log.Printf("submitEvent: info: event.ImportName=\"%s\": %s", event.ImportName, body)
+	log.Printf("submitEvent: info: event.ImportName=\"%s\" requestTime=%s: %s", event.ImportName, requestTime, body)
 	syscall.Unlink(event.File)
 }
 
