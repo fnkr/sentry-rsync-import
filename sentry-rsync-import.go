@@ -52,8 +52,12 @@ type Config struct {
 const (
 	eventFileExtension        = ".sentry_report"
 	minTimeBetweenImportsUnit = time.Second
-	sentryHTTPTimeout         = time.Second * 4
-	maxTimeToWaitUntilExit    = sentryHTTPTimeout + (time.Second * 4)
+	httpTimeout               = time.Second * 4
+	maxTimeToWaitUntilExit    = httpTimeout + (time.Second * 4)
+)
+
+var (
+	httpcli = http.Client{Timeout: httpTimeout}
 )
 
 func (imprt *Import) Cache() string {
@@ -102,9 +106,6 @@ func submitEvent(event Event) {
 	defer reader.Close()
 
 	// Submit
-	client := &http.Client{
-		Timeout: sentryHTTPTimeout,
-	}
 	request, err := http.NewRequest("POST", event.Target.StoreAPI, reader)
 	if err != nil {
 		log.Printf("submitEvent: error: event.File=\"%s\" event.ImportName=\"%s\" error=\"%v\"", event.File, event.ImportName, err)
@@ -113,7 +114,7 @@ func submitEvent(event Event) {
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("X-Sentry-Auth", event.Target.AuthHeader)
 	startTime := time.Now()
-	response, err := client.Do(request)
+	response, err := httpcli.Do(request)
 	requestTime := time.Since(startTime).Round(time.Millisecond)
 
 	// Evaluate response
@@ -122,6 +123,7 @@ func submitEvent(event Event) {
 		return
 	}
 	body, err := ioutil.ReadAll(response.Body)
+	response.Body.Close()
 	if err != nil {
 		log.Printf("submitEvent: error: event.File=\"%s\" event.ImportName=\"%s\" error=\"%v\" requestTime=%s", event.File, event.ImportName, err, requestTime)
 		return
