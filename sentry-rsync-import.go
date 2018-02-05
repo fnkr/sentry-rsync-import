@@ -141,19 +141,20 @@ func submitEvent(event Event) {
 func submitEvents(imprt Import, queue chan Event) {
 	imprt.SourceLock.Lock()
 	defer imprt.SourceLock.Unlock()
-	log.Printf("submitEvents: info: rsync: imprt.Name=\"%s\"", imprt.Name)
+	startTime := time.Now()
 	output, err := rsync(imprt.Source, imprt.Cache())
+	rsyncTime := time.Since(startTime).Round(time.Millisecond)
 	if err != nil {
-		log.Printf("submitEvents: error: imprt.Name=\"%s\" output=\"%s\" error=\"%v\"", imprt.Name, string(output), err)
+		log.Printf("submitEvents: error: imprt.Name=\"%s\" output=\"%s\" error=\"%v\" rsyncTime=%s", imprt.Name, string(output), err, rsyncTime)
 		return
 	}
 	events, err := filepath.Glob(filepath.Join(imprt.Cache(), "*"+eventFileExtension))
 	if err != nil {
-		log.Printf("submitEvents: error: imprt.Name=\"%s\" error=\"%v\"", imprt.Name, err)
+		log.Printf("submitEvents: error: imprt.Name=\"%s\" error=\"%v\" rsyncTime=%s", imprt.Name, err, rsyncTime)
 		return
 	}
+	log.Printf("submitEvents: info: rsync: imprt.Name=\"%s\" rsyncTime=%s", imprt.Name, rsyncTime)
 	for _, file := range events {
-		//log.Printf("submitEvents: info: add file to event queue: imprt.Source=\"%s\"", imprt.Source)
 		queue <- Event{File: file, Target: imprt.Target, ImportName: imprt.Name}
 	}
 }
