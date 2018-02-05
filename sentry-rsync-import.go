@@ -58,6 +58,7 @@ const (
 
 var (
 	httpcli = http.Client{Timeout: httpTimeout}
+	fileLockRegistry = LockRegistry{}
 )
 
 func (imprt *Import) Cache() string {
@@ -97,6 +98,12 @@ func (config *Config) init() error {
 }
 
 func submitEvent(event Event) {
+	// Ensure file is not being consumed by another thread
+	if !fileLockRegistry.TryLock(event.File) {
+		return
+	}
+	defer fileLockRegistry.Unlock(event.File)
+
 	// Read
 	reader, err := os.Open(event.File)
 	if err != nil {
@@ -233,6 +240,10 @@ func parseFlags() (Config, error) {
 
 	// Return config
 	return config, nil
+}
+
+func init() {
+	fileLockRegistry.Init()
 }
 
 func main() {
