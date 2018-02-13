@@ -26,5 +26,5 @@ func (reg *LockRegistry) TryLock(key string) bool {
 func (reg *LockRegistry) Unlock(key string) {
 	reg.lock.Lock()
 	defer reg.lock.Unlock()
-	delete(reg.locks, "key")
+	delete(reg.locks, key)
 }
