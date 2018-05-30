@@ -51,6 +51,7 @@ type Config struct {
 
 const (
 	eventFileExtension        = ".sentry_report"
+	eventMaxAge               = time.Hour * 24
 	minTimeBetweenImportsUnit = time.Second
 	httpTimeout               = time.Second * 4
 	maxTimeToWaitUntilExit    = httpTimeout + (time.Second * 4)
@@ -103,6 +104,19 @@ func submitEvent(event Event) {
 		return
 	}
 	defer fileLockRegistry.Unlock(event.File)
+
+	// Delete events without submitting them if they're older then eventMaxAge
+	// (Also fixes events that keep failing)
+	info, err := os.Stat(event.File)
+	if err != nil {
+		log.Printf("submitEvent: error: event.File=\"%s\" event.\"%s\" error=\"%v\"", event.File, event.ImportName, err)
+		return
+	}
+	if time.Since(info.ModTime()) > eventMaxAge {
+		log.Printf("submitEvent: info: file deleted because it was older than %s: imprt.Name=\"%s\" event.File=\"%s\" info.ModTime()=\"%s\"", eventMaxAge, event.ImportName, event.File, info.ModTime())
+		syscall.Unlink(event.File)
+		return
+	}
 
 	// Read
 	reader, err := os.Open(event.File)
