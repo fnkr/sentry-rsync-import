@@ -1,11 +1,11 @@
 # [sentry-rsync-import](https://github.com/fnkr/sentry-rsync-import)
 
 Sometimes Sentry client and server cannot communicate directly with each other.
-In this case it's possible to connect both parties using a custom transport.
-This is a little tool that retrieves Sentry reports using rsync and then submits them to a Sentry server.
-It is currently being used in production with ~600 events per minute.
+It is still possible to forward reports to Sentry using custom transports.
+This is a tool to download serialized reports from a server using rsync and submit them to Sentry.
+Is is being used in production with ~600 events per minute.
 
-## Define custom transport
+## Configure custom transport
 
 ### Python
 
