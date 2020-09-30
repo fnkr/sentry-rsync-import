@@ -155,6 +155,8 @@ func submitEvent(event Event) {
 		// TODO: Parse JSON response
 		if response.StatusCode == 403 && strings.HasPrefix(string(body), "{\"error\":\"An event with the same ID already exists") {
 			// Pass
+		} else if response.StatusCode == 429 {
+			// Pass
 		} else {
 			return
 		}
