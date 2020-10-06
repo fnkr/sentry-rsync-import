@@ -152,7 +152,7 @@ func submitEvent(event Event) {
 	if response.StatusCode == 200 {
 		log.Printf("submitEvent: info: event.ImportName=\"%s\" requestTime=%s: %s", event.ImportName, requestTime, body)
 	} else {
-        discard := false
+		discard := false
 
 		// TODO: Parse JSON response
 		if response.StatusCode == 403 && strings.HasPrefix(string(body), "{\"error\":\"An event with the same ID already exists") {
